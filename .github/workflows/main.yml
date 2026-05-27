@@ -33,4 +33,4 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Python Unit Tests
-        run: pytest test_app.py
+        run: python3 -m pytest test_app.py
