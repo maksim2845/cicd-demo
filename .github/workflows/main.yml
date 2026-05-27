@@ -1,26 +1,41 @@
-name: CI-CD Demo Pipeline
+name: CI-CD Protection Pipeline
 
 on:
   push:
     branches: [ "main" ]
 
 jobs:
-  # Задача 1 (System Info)
-  info:
-    runs-on: [self-hosted, linux, shell, dev]
-    steps:
-      - name: Print System Info
-        run: |
-          hostname
-          whoami
-          docker --version
+  # === РАЗДЕЛ 1. НАСТРОЙКА СТАТИЧЕСКОГО АНАЛИЗА (LINTING) ===
 
-  # Задача 2 (Simple Test)
-  test:
+  # Задача 1: Проверка Bash-скриптов
+  bash-lint:
     runs-on: [self-hosted, linux, shell, dev]
-    needs: info # Запустится только после успешного завершения стадии info
     steps:
-      - name: Run Simple Test
-        run: |
-          echo "Hello CI" > artifact.txt
-          cat artifact.txt
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Lint Bash Scripts
+        run: shellcheck deploy.sh
+
+  # Задача 2: Проверка YAML-файлов
+  yaml-lint:
+    runs-on: [self-hosted, linux, shell, dev]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Lint YAML Configuration
+        run: yamllint .
+
+  # === РАЗДЕЛ 2. НАСТРОЙКА UNIT-ТЕСТИРОВАНИЯ ===
+
+  python-unit-test:
+    runs-on: [self-hosted, linux, shell, dev]
+    # Стадия test начнется только если ОБЕ джобы стадии lint (bash и yaml) пройдут успешно
+    needs: [bash-lint, yaml-lint]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Python Unit Tests
+        run: pytest test_app.py
