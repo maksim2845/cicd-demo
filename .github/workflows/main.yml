@@ -1,0 +1,26 @@
+name: CI-CD Demo Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  # Задача 1 (System Info)
+  info:
+    runs-on: [self-hosted, linux, shell, dev]
+    steps:
+      - name: Print System Info
+        run: |
+          hostname
+          whoami
+          docker --version
+
+  # Задача 2 (Simple Test)
+  test:
+    runs-on: [self-hosted, linux, shell, dev]
+    needs: info # Запустится только после успешного завершения стадии info
+    steps:
+      - name: Run Simple Test
+        run: |
+          echo "Hello CI" > artifact.txt
+          cat artifact.txt
