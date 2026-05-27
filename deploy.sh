@@ -1,4 +1,4 @@
 #!/bin/bash
-echo "Starting deployment at: $(date)"
-echo "Deploy user is: "$USER"
+echo "Starting deployment"
+echo "Deploy user is: ${USER}"
 ls -la
