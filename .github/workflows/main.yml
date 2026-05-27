@@ -2,12 +2,9 @@ name: CI-CD Protection Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
-  # === РАЗДЕЛ 1. НАСТРОЙКА СТАТИЧЕСКОГО АНАЛИЗА (LINTING) ===
-
-  # Задача 1: Проверка Bash-скриптов
   bash-lint:
     runs-on: [self-hosted, linux, shell, dev]
     steps:
@@ -15,9 +12,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Lint Bash Scripts
-        run: shellcheck deploy.sh
+        run: |
+          chmod +x deploy.sh
+          shellcheck deploy.sh
 
-  # Задача 2: Проверка YAML-файлов
   yaml-lint:
     runs-on: [self-hosted, linux, shell, dev]
     steps:
@@ -27,11 +25,8 @@ jobs:
       - name: Lint YAML Configuration
         run: yamllint .
 
-  # === РАЗДЕЛ 2. НАСТРОЙКА UNIT-ТЕСТИРОВАНИЯ ===
-
   python-unit-test:
     runs-on: [self-hosted, linux, shell, dev]
-    # Стадия test начнется только если ОБЕ джобы стадии lint (bash и yaml) пройдут успешно
     needs: [bash-lint, yaml-lint]
     steps:
       - name: Checkout code
