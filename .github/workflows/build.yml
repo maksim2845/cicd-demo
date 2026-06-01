@@ -22,7 +22,7 @@ jobs:
 
   build:
     needs: test
-    runs-on: [self-hosted, linux, docker, build]
+    runs-on: [build]
     
     steps:
       - name: Checkout code
