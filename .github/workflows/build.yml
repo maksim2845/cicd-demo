@@ -5,7 +5,6 @@ on:
     branches: [ main, master ]
 
 jobs:
-  # 1. Стадия тестирования
   test:
     runs-on: ubuntu-latest
     steps:
@@ -21,7 +20,6 @@ jobs:
         run: |
           echo "Running tests..." 
 
-  # 2. Стадия Сборки (docker-build)
   build:
     needs: test
     runs-on: [self-hosted, linux, docker, build]
@@ -50,10 +48,9 @@ jobs:
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ github.run_number }}
 
-  # 🚀 Раздел 2 ТЗ: Новая стадия автоматического Деплоя (deploy-to-test)
   deploy:
-    needs: build # Запускается строго после успешного завершения сборки образа
-    runs-on: [self-hosted, linux, docker, build] # Привязка к вашему раннеру
+    needs: build
+    runs-on: [self-hosted, linux, docker, build]
     
     steps:
       - name: Executing remote ssh commands to deploy app
@@ -62,17 +59,17 @@ jobs:
           host: ${{ secrets.TARGET_HOST }}
           username: ${{ secrets.TARGET_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 22 # Стандартный порт SSH для связи между виртуалками
+          port: 22
           script: |
-            # 1. Авторизация тестового сервера в реестре пакетов GitHub
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            # 1. Неинтерактивный вход в реестр
+            docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
             
-            # 2. Остановка и удаление старой версии контейнера приложения (если они есть)
+            # 2. Остановка и удаление старых контейнеров
             docker stop my-python-app || true
             docker rm my-python-app || true
             
-            # 3. Скачивание свежего собранного Docker-образа
+            # 3. Скачивание свежей сборки
             docker pull ghcr.io/${{ github.repository }}:latest
             
-            # 4. Запуск приложения на порту 80 целевого сервера
+            # 4. Запуск контейнера на 80 порту целевого сервера
             docker run -d --name my-python-app -p 80:3010 ghcr.io/${{ github.repository }}:latest
