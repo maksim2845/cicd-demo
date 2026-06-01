@@ -5,6 +5,7 @@ on:
     branches: [ main, master ]
 
 jobs:
+  # 1. Стадия тестирования
   test:
     runs-on: ubuntu-latest
     steps:
@@ -20,6 +21,7 @@ jobs:
         run: |
           echo "Running tests..." 
 
+  # 2. Стадия Сборки (docker-build)
   build:
     needs: test
     runs-on: [self-hosted, linux, docker, build]
@@ -47,3 +49,30 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ github.run_number }}
+
+  # 🚀 Раздел 2 ТЗ: Новая стадия автоматического Деплоя (deploy-to-test)
+  deploy:
+    needs: build # Запускается строго после успешного завершения сборки образа
+    runs-on: [self-hosted, linux, docker, build] # Привязка к вашему раннеру
+    
+    steps:
+      - name: Executing remote ssh commands to deploy app
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.TARGET_HOST }}
+          username: ${{ secrets.TARGET_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22 # Стандартный порт SSH для связи между виртуалками
+          script: |
+            # 1. Авторизация тестового сервера в реестре пакетов GitHub
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            # 2. Остановка и удаление старой версии контейнера приложения (если они есть)
+            docker stop my-python-app || true
+            docker rm my-python-app || true
+            
+            # 3. Скачивание свежего собранного Docker-образа
+            docker pull ghcr.io/${{ github.repository }}:latest
+            
+            # 4. Запуск приложения на порту 80 целевого сервера
+            docker run -d --name my-python-app -p 80:3010 ghcr.io/${{ github.repository }}:latest
